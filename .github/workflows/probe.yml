@@ -17,13 +17,15 @@ jobs:
           UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
           BASE='https://somon.tj/telefonyi-i-svyaz/mobilnyie-telefonyi/'
           for p in 4 192; do
-            out=$(curl -s --compressed -o page.html -w '%{http_code} %{size_download} %{redirect_url}' \
+            out=$(curl -s --compressed -D headers.txt -o page.html -w '%{http_code} %{size_download} %{redirect_url}' \
               -A "$UA" -H 'Accept-Language: ru-RU,ru;q=0.9' --max-time 30 "${BASE}?page=$p")
             code=${out%% *}
             ads=$(grep -oE '\\"id\\":[0-9]{7,9},\\"title\\"' page.html | sort -u | wc -l)
             regular=$(grep -oE '\\"type\\":\\"regular\\"' page.html | wc -l)
             imei=$(grep -oE '\\"label\\":\\"verified_imei\\"' page.html | wc -l)
             echo "page=$p http=$code bytes=$(wc -c < page.html) ads=$ads regular=$regular imei_labels=$imei"
-            rm -f page.html
+            # кто отказал (заголовок server и <title> страницы отказа) — без тела страницы
+            echo "  server=$(grep -i '^server:' headers.txt | tr -d '\r' | cut -d' ' -f2-) cf_ray=$(grep -ci '^cf-ray:' headers.txt) title=$(grep -o '<title>[^<]*</title>' page.html | head -1)"
+            rm -f page.html headers.txt
             sleep 2
           done
