@@ -1,0 +1,29 @@
+name: probe
+
+# Проба: отдаёт ли somon.tj страницы раннеру GitHub. В лог — только код, размер и счётчики.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch pages
+        run: |
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+          BASE='https://somon.tj/telefonyi-i-svyaz/mobilnyie-telefonyi/'
+          for p in 4 192; do
+            out=$(curl -s --compressed -o page.html -w '%{http_code} %{size_download} %{redirect_url}' \
+              -A "$UA" -H 'Accept-Language: ru-RU,ru;q=0.9' --max-time 30 "${BASE}?page=$p")
+            code=${out%% *}
+            ads=$(grep -oE '\\"id\\":[0-9]{7,9},\\"title\\"' page.html | sort -u | wc -l)
+            regular=$(grep -oE '\\"type\\":\\"regular\\"' page.html | wc -l)
+            imei=$(grep -oE '\\"label\\":\\"verified_imei\\"' page.html | wc -l)
+            echo "page=$p http=$code bytes=$(wc -c < page.html) ads=$ads regular=$regular imei_labels=$imei"
+            rm -f page.html
+            sleep 2
+          done

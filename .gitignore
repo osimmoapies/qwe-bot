@@ -1,0 +1,7 @@
+.dart_tool/
+build/
+*.log
+.env
+# реальные страницы сайта (личные данные продавцов) — только локально
+test/fixtures/live/
+local/
